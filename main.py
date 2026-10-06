@@ -18,7 +18,7 @@ def start(stdscr):
     return key
 
 
-def display(stdscr,curr, target, wpm=0):
+def display(stdscr,curr, target, wpm=0, accuracy=0):
     lines= target.split("\n")
     for i, line in enumerate(lines):
         stdscr.addstr(i,0,line)
@@ -33,6 +33,7 @@ def display(stdscr,curr, target, wpm=0):
         stdscr.addstr(rows,cols, ch, curses.color_pair(1) if ch==target[i] else curses.color_pair(2))
         cols += 1
     stdscr.addstr(len(lines)+2,0,f"WPM: {wpm}")
+    stdscr.addstr(len(lines)+3,0,f"Accuracy: {accuracy}%")
 
 
 def load_song(choice):
@@ -46,6 +47,12 @@ def calculate_wpm(characters, seconds):
 
     return round((characters / (seconds / 60)) / 5)
 
+def calculate_accuracy(correct, total):
+    if total == 0:
+        return 0
+
+    return round((correct / total) * 100, 2)
+
 def func(stdscr, choice):
     standard_text= load_song(choice)
     user_text=[]
@@ -56,14 +63,27 @@ def func(stdscr, choice):
         time_elapsed= max(time.time() - curr_time, 1)
         wpm = calculate_wpm(len(user_text), time_elapsed)
 
+        correct=0
+
+        for i in range(len(user_text)):
+            if user_text[i] == standard_text[i]:
+                correct += 1
+
+        accuracy = calculate_accuracy(correct, len(user_text))
+
+
         stdscr.clear()
-        display(stdscr,user_text,standard_text, wpm)
+        display(stdscr,user_text,standard_text, wpm, accuracy)
         stdscr.refresh()
 
         #.join() is used to convert the list of characters into a single string
-        if "".join(user_text).rstrip() == standard_text.rstrip():
-            stdscr.addstr(len(standard_text.split("\n"))+5,0,"Congratulations! Press any key to try again or ESC to exit.")
-            stdscr.nodelay(False) #so it wont wait for any key press and just exit
+        if len(user_text) == len(standard_text):
+            stdscr.addstr(
+                len(standard_text.split("\n")) + 5,
+                0,
+                "Finished! Press any key to try again or ESC to exit."
+            )
+            stdscr.nodelay(False)
             break
 
         try:
